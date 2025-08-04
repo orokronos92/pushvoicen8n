@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createSession, validateSession, endSession, updateSessionActivity, SessionInfo } from '@/lib/auth'
+import { createSession, validateSession, endSession as authEndSession, updateSessionActivity, SessionInfo } from '@/lib/auth'
 
 interface SessionState {
   isActive: boolean
@@ -64,8 +64,7 @@ export function useSession(userId: string = 'user_123') {
     if (session.sessionId) {
       // End session in the session store
       try {
-        // Note: endSession function doesn't take parameters based on the error
-        endSession()
+        authEndSession(session.sessionId)
       } catch (error) {
         console.error('Failed to end session in store:', error)
       }
