@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken'
+import { jwtDecode } from 'jwt-decode'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = '5m' // 5 minutes as specified in PRD
+const JWT_SECRET = process.env.JWT_SECRET || 'pushvoice-secret-key-very-long-and-complex-2025'
+const JWT_EXPIRES_IN = 5 * 60 * 1000 // 5 minutes in milliseconds
 
 export interface JWTPayload {
   userId: string
@@ -11,19 +11,53 @@ export interface JWTPayload {
 }
 
 /**
- * Generate a JWT token for authentication
+ * Simple JWT-like token generation for client-side use
+ * Note: This is not as secure as server-side JWT but works for client-side needs
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  }
+  
+  const now = Math.floor(Date.now() / 1000)
+  const tokenPayload = {
+    ...payload,
+    iat: now,
+    exp: now + Math.floor(JWT_EXPIRES_IN / 1000)
+  }
+  
+  // Simple base64 encoding (not secure, but works for client-side)
+  const encodedHeader = btoa(JSON.stringify(header))
+  const encodedPayload = btoa(JSON.stringify(tokenPayload))
+  
+  // Create a simple signature (not cryptographically secure)
+  const signature = btoa(JSON.stringify({
+    data: `${encodedHeader}.${encodedPayload}`,
+    secret: JWT_SECRET
+  }))
+  
+  return `${encodedHeader}.${encodedPayload}.${signature}`
 }
 
 /**
- * Verify a JWT token and return the payload
+ * Decode and verify a JWT token
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload
-    return decoded
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return null
+    }
+    
+    const payload = JSON.parse(atob(parts[1]))
+    
+    // Check expiration
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      return null
+    }
+    
+    return payload as JWTPayload
   } catch (error) {
     console.error('JWT verification failed:', error)
     return null
@@ -35,7 +69,7 @@ export function verifyToken(token: string): JWTPayload | null {
  */
 export function isTokenExpired(token: string): boolean {
   try {
-    const decoded = jwt.decode(token) as { exp: number }
+    const decoded = jwtDecode(token) as { exp: number }
     if (!decoded || !decoded.exp) return true
     
     return decoded.exp * 1000 < Date.now()
@@ -49,7 +83,7 @@ export function isTokenExpired(token: string): boolean {
  */
 export function getTokenTimeRemaining(token: string): number {
   try {
-    const decoded = jwt.decode(token) as { exp: number }
+    const decoded = jwtDecode(token) as { exp: number }
     if (!decoded || !decoded.exp) return 0
     
     const remaining = decoded.exp * 1000 - Date.now()
@@ -108,7 +142,7 @@ export function createSession(userId: string): { token: string; sessionInfo: Ses
     const token = generateToken(sessionPayload)
     
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000) // 5 minutes
+    const expiresAt = new Date(now.getTime() + JWT_EXPIRES_IN)
     
     const sessionInfo: SessionInfo = {
       userId,

@@ -107,7 +107,7 @@ export default function Home() {
     }
     
     // Initialize WebSocket client
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'
+    const wsUrl = 'wss://botvoice.srv801583.hstgr.cloud/ws'
     
     wsClientRef.current = createWebSocketClient({
       url: wsUrl,
@@ -236,7 +236,7 @@ export default function Home() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <header className="text-center mb-6 sm:mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">PushVoice</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-2">BotVoice</h1>
         <p className="text-base sm:text-lg text-gray-600">Communication vocale avec votre agent n8n</p>
       </header>
 

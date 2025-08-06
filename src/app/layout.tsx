@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'PushVoice',
+  title: 'BotVoice',
   description: 'Application de communication vocale avec n8n',
 }
 
