@@ -242,7 +242,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         <div className="xl:col-span-2 order-2 xl:order-1">
-          <ConversationDisplay messages={messages} />
+          <ConversationDisplay messages={messages} suppressHydrationWarning={true} />
         </div>
         
         <div className="space-y-4 sm:space-y-6 order-1 xl:order-2">

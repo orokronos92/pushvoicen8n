@@ -8,9 +8,10 @@ interface Message {
 
 interface ConversationDisplayProps {
   messages: Message[]
+  suppressHydrationWarning?: boolean
 }
 
-export default function ConversationDisplay({ messages }: ConversationDisplayProps) {
+export default function ConversationDisplay({ messages, suppressHydrationWarning }: ConversationDisplayProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('fr-FR', {
       hour: '2-digit',
@@ -20,7 +21,7 @@ export default function ConversationDisplay({ messages }: ConversationDisplayPro
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 h-[400px] sm:h-[500px] flex flex-col">
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 h-[400px] sm:h-[500px] flex flex-col" suppressHydrationWarning={suppressHydrationWarning}>
       <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Conversation</h2>
       
       <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4">
