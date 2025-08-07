@@ -1,7 +1,8 @@
 import { jwtDecode } from 'jwt-decode'
+import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'pushvoice-secret-key-very-long-and-complex-2025'
-const JWT_EXPIRES_IN = 5 * 60 * 1000 // 5 minutes in milliseconds
+const JWT_EXPIRES_IN = '5m' // 5 minutes en format JWT standard
 
 export interface JWTPayload {
   userId: string
@@ -11,53 +12,36 @@ export interface JWTPayload {
 }
 
 /**
- * Simple JWT-like token generation for client-side use
- * Note: This is not as secure as server-side JWT but works for client-side needs
+ * Generate a real JWT token with cryptographic signature
+ * Compatible with n8n and standard JWT libraries
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  const header = {
-    alg: 'HS256',
-    typ: 'JWT'
+  try {
+    // Generate real JWT with proper cryptographic signature using jsonwebtoken
+    const token = jwt.sign(payload, JWT_SECRET, {
+      algorithm: 'HS256',
+      expiresIn: JWT_EXPIRES_IN
+    })
+    
+    return token
+  } catch (error) {
+    console.error('Failed to generate JWT token:', error)
+    throw new Error('Token generation failed')
   }
-  
-  const now = Math.floor(Date.now() / 1000)
-  const tokenPayload = {
-    ...payload,
-    iat: now,
-    exp: now + Math.floor(JWT_EXPIRES_IN / 1000)
-  }
-  
-  // Simple base64 encoding (not secure, but works for client-side)
-  const encodedHeader = btoa(JSON.stringify(header))
-  const encodedPayload = btoa(JSON.stringify(tokenPayload))
-  
-  // Create a simple signature (not cryptographically secure)
-  const signature = btoa(JSON.stringify({
-    data: `${encodedHeader}.${encodedPayload}`,
-    secret: JWT_SECRET
-  }))
-  
-  return `${encodedHeader}.${encodedPayload}.${signature}`
 }
 
 /**
- * Decode and verify a JWT token
+ * Verify a JWT token using jsonwebtoken library
+ * Compatible with n8n and standard JWT verification
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      return null
-    }
+    // Use jsonwebtoken.verify for proper cryptographic verification
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      algorithms: ['HS256']
+    }) as JWTPayload
     
-    const payload = JSON.parse(atob(parts[1]))
-    
-    // Check expiration
-    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-      return null
-    }
-    
-    return payload as JWTPayload
+    return decoded
   } catch (error) {
     console.error('JWT verification failed:', error)
     return null
@@ -142,7 +126,8 @@ export function createSession(userId: string): { token: string; sessionInfo: Ses
     const token = generateToken(sessionPayload)
     
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + JWT_EXPIRES_IN)
+    // Calculate expiration from JWT token (5 minutes from now)
+    const expiresAt = new Date(now.getTime() + 5 * 60 * 1000)
     
     const sessionInfo: SessionInfo = {
       userId,
