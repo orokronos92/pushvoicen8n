@@ -1,5 +1,5 @@
 import './globals.css'
-import '@/lib/polyfills.client'
+import PolyfillLoader from '@/components/PolyfillLoader'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
@@ -20,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={inter.className}>
+        <PolyfillLoader />
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
           <main className="container mx-auto px-4 py-8">
             {children}
