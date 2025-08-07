@@ -6,60 +6,14 @@ interface SessionManagerProps {
   onSessionStateChange: (active: boolean) => void
   sessionActive: boolean
   timeRemaining: number
-  onTimeRemainingChange: (time: number) => void
 }
 
 export default function SessionManager({
   onSessionStateChange,
   sessionActive,
   timeRemaining,
-  onTimeRemainingChange,
 }: SessionManagerProps) {
-  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(timeRemaining) // 5 minutes in seconds
-  
-  useEffect(() => {
-    setSessionTimeLeft(timeRemaining)
-  }, [timeRemaining])
-  
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null
-    
-    if (sessionActive) {
-      timer = setInterval(() => {
-        setSessionTimeLeft(prev => {
-          const newTime = prev - 1
-          
-          if (newTime <= 1) {
-            // Session timeout
-            if (timer) clearInterval(timer)
-            handleEndSession()
-            return 0
-          }
-          return newTime
-        })
-      }, 1000)
-    } else {
-      // Reset session state when inactive
-      if (timer) clearInterval(timer)
-      setSessionTimeLeft(300)
-    }
-    
-    return () => {
-      if (timer) clearInterval(timer)
-    }
-  }, [sessionActive])
-  
-  // Effet séparé pour notifier le parent du changement de temps
-  // Utiliser une ref pour éviter les appels en boucle
-  const lastNotifiedTime = useRef<number>(timeRemaining)
-  
-  useEffect(() => {
-    // Ne notifier que si le temps a changé significativement (plus de 1 seconde)
-    if (Math.abs(sessionTimeLeft - lastNotifiedTime.current) >= 1) {
-      lastNotifiedTime.current = sessionTimeLeft
-      onTimeRemainingChange(sessionTimeLeft)
-    }
-  }, [sessionTimeLeft, onTimeRemainingChange])
+  // Le temps est géré par le composant parent, pas besoin d'état local
   
   const handleStartSession = () => {
     onSessionStateChange(true)
@@ -77,15 +31,15 @@ export default function SessionManager({
   
   const getSessionStatusColor = () => {
     if (!sessionActive) return 'text-gray-600'
-    if (sessionTimeLeft > 120) return 'text-green-600' // More than 2 minutes
-    if (sessionTimeLeft > 60) return 'text-yellow-600' // Between 1 and 2 minutes
+    if (timeRemaining > 120) return 'text-green-600' // More than 2 minutes
+    if (timeRemaining > 60) return 'text-yellow-600' // Between 1 and 2 minutes
     return 'text-red-600' // Less than 1 minute
   }
   
   const getSessionStatusText = () => {
     if (!sessionActive) return 'Session inactive'
-    if (sessionTimeLeft > 120) return 'Session active'
-    if (sessionTimeLeft > 60) return 'Session expirant bientôt'
+    if (timeRemaining > 120) return 'Session active'
+    if (timeRemaining > 60) return 'Session expirant bientôt'
     return 'Session expirant très bientôt'
   }
   
@@ -101,7 +55,7 @@ export default function SessionManager({
           </div>
           {sessionActive && (
             <div className="text-xl sm:text-2xl font-mono font-bold text-gray-800 mt-1">
-              {formatTime(sessionTimeLeft)}
+              {formatTime(timeRemaining)}
             </div>
           )}
         </div>
@@ -111,13 +65,13 @@ export default function SessionManager({
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all duration-1000 ${
-                sessionTimeLeft > 120
+                timeRemaining > 120
                   ? 'bg-green-500'
-                  : sessionTimeLeft > 60
+                  : timeRemaining > 60
                   ? 'bg-yellow-500'
                   : 'bg-red-500'
               }`}
-              style={{ width: `${(sessionTimeLeft / 300) * 100}%` }}
+              style={{ width: `${(timeRemaining / 300) * 100}%` }}
             />
           </div>
         )}

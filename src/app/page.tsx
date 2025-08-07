@@ -251,7 +251,6 @@ export default function Home() {
             onSessionStateChange={handleSessionStateChange}
             sessionActive={session.isActive}
             timeRemaining={Math.min(session.timeRemaining, Math.floor(getTimeRemaining() / 1000))}
-            onTimeRemainingChange={updateTimeRemaining}
           />
           
           <VoiceRecorder
