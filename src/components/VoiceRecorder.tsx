@@ -10,6 +10,7 @@ interface VoiceRecorderProps {
   sessionActive: boolean
   isRecording: boolean
   onError: (error: any) => void
+  suppressHydrationWarning?: boolean
 }
 
 export default function VoiceRecorder({
@@ -19,10 +20,12 @@ export default function VoiceRecorder({
   sessionActive,
   isRecording,
   onError,
+  suppressHydrationWarning,
 }: VoiceRecorderProps) {
   const [transcript, setTranscript] = useState('')
   const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null)
   const [lastSpokenTime, setLastSpokenTime] = useState<number>(0)
+  const [isClient, setIsClient] = useState(false)
   
   const {
     transcript: speechTranscript,
@@ -32,6 +35,11 @@ export default function VoiceRecorder({
   } = useSpeechRecognition()
 
   const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Set isClient to true when component mounts on client
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     if (speechTranscript !== transcript) {
@@ -104,7 +112,8 @@ export default function VoiceRecorder({
     }
   }
 
-  if (!browserSupportsSpeechRecognition) {
+  // Only check browser support on client side
+  if (isClient && !browserSupportsSpeechRecognition) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <p className="text-red-700 text-sm">
@@ -113,9 +122,26 @@ export default function VoiceRecorder({
       </div>
     )
   }
+  
+  // Show loading state during server-side rendering
+  if (!isClient) {
+    return (
+      <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6" suppressHydrationWarning={suppressHydrationWarning}>
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Enregistrement Vocal</h2>
+        <div className="flex justify-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-400"></div>
+          </div>
+        </div>
+        <div className="text-center mt-3">
+          <p className="text-sm font-medium text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6" suppressHydrationWarning={suppressHydrationWarning}>
       <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-3 sm:mb-4">Enregistrement Vocal</h2>
       
       <div className="space-y-3 sm:space-y-4">

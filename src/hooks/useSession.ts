@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createSession, validateSession, endSession as authEndSession, updateSessionActivity, SessionInfo } from '@/lib/auth'
+import { generateToken, verifyToken, getTokenTimeRemaining, createSessionPayload, JWTPayload } from '@/lib/auth'
 
 interface SessionState {
   isActive: boolean
@@ -7,7 +7,6 @@ interface SessionState {
   sessionId: string | null
   timeRemaining: number
   userId: string
-  sessionInfo: SessionInfo | null
 }
 
 export function useSession(userId: string = 'user_123') {
@@ -17,30 +16,30 @@ export function useSession(userId: string = 'user_123') {
     sessionId: null,
     timeRemaining: 0,
     userId,
-    sessionInfo: null,
   })
   
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const tokenRefreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Start a new session
-  const startSession = useCallback(() => {
+  const startSession = useCallback(async () => {
     try {
-      const result = createSession(userId)
-      if (!result) {
-        console.error('Failed to create session')
+      const payload = createSessionPayload(userId)
+      const token = await generateToken(payload)
+      
+      if (!token) {
+        console.error('Failed to generate token')
         return false
       }
       
-      const { token, sessionInfo } = result
+      const decodedToken = token as unknown as JWTPayload
       
       setSession(prev => ({
         ...prev,
         isActive: true,
         token,
-        sessionId: sessionInfo.sessionId,
+        sessionId: decodedToken.sessionId,
         timeRemaining: 300, // 5 minutes
-        sessionInfo,
       }))
       
       // Set up session timeout
@@ -61,15 +60,6 @@ export function useSession(userId: string = 'user_123') {
 
   // End the current session
   const endSession = useCallback(() => {
-    if (session.sessionId) {
-      // End session in the session store
-      try {
-        authEndSession(session.sessionId)
-      } catch (error) {
-        console.error('Failed to end session in store:', error)
-      }
-    }
-    
     if (sessionTimerRef.current) {
       clearTimeout(sessionTimerRef.current)
       sessionTimerRef.current = null
@@ -86,20 +76,21 @@ export function useSession(userId: string = 'user_123') {
       token: null,
       sessionId: null,
       timeRemaining: 0,
-      sessionInfo: null,
     }))
-  }, [session.sessionId])
+  }, [])
 
   // Validate session and update activity
-  const validateAndUpdateSession = useCallback(() => {
+  const validateAndUpdateSession = useCallback(async () => {
     if (!session.token) return false
     
     try {
-      const validation = validateSession(session.token)
-      if (validation.valid && validation.sessionInfo) {
+      const payload = await verifyToken(session.token)
+      if (payload) {
+        // Update time remaining from token
+        const timeRemaining = getTokenTimeRemaining(session.token)
         setSession(prev => ({
           ...prev,
-          sessionInfo: validation.sessionInfo || null,
+          timeRemaining,
         }))
         return true
       } else {
@@ -115,24 +106,24 @@ export function useSession(userId: string = 'user_123') {
 
   // Update session activity
   const updateActivity = useCallback(() => {
-    if (!session.sessionId) return false
+    if (!session.isActive) return false
     
     try {
-      const success = updateSessionActivity(session.sessionId)
-      if (success && session.sessionInfo) {
-        // Update local session info
-        const updatedSessionInfo = { ...session.sessionInfo, lastActivity: new Date() }
+      // Activity is tracked by token validation
+      // Just update the time remaining
+      if (session.token) {
+        const timeRemaining = getTokenTimeRemaining(session.token)
         setSession(prev => ({
           ...prev,
-          sessionInfo: updatedSessionInfo,
+          timeRemaining,
         }))
       }
-      return success
+      return true
     } catch (error) {
       console.error('Failed to update session activity:', error)
       return false
     }
-  }, [session.sessionId, session.sessionInfo])
+  }, [session.isActive, session.token])
 
   // Update session time remaining
   const updateTimeRemaining = useCallback((time: number) => {
@@ -141,6 +132,33 @@ export function useSession(userId: string = 'user_123') {
       timeRemaining: time,
     }))
   }, [])
+
+  // Auto-refresh token and update time remaining
+  useEffect(() => {
+    if (!session.isActive || !session.token) return
+    
+    const updateTimer = () => {
+      if (session.token) {
+        const timeRemaining = getTokenTimeRemaining(session.token)
+        setSession(prev => ({
+          ...prev,
+          timeRemaining,
+        }))
+        
+        // End session if expired
+        if (timeRemaining <= 0) {
+          endSession()
+        }
+      }
+    }
+    
+    // Update every second
+    const interval = setInterval(updateTimer, 1000)
+    
+    return () => {
+      clearInterval(interval)
+    }
+  }, [session.isActive, session.token, endSession])
 
   // Cleanup on unmount
   useEffect(() => {

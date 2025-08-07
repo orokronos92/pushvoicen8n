@@ -6,6 +6,7 @@ import { AppError, getUserFriendlyErrorMessage } from '@/lib/utils'
 interface ErrorDisplayProps {
   error: AppError | null
   onDismiss?: () => void
+  onReset?: () => void
   autoDismiss?: boolean
   dismissTimeout?: number
 }
@@ -13,6 +14,7 @@ interface ErrorDisplayProps {
 export default function ErrorDisplay({
   error,
   onDismiss,
+  onReset,
   autoDismiss = true,
   dismissTimeout = 5000,
 }: ErrorDisplayProps) {
@@ -126,7 +128,18 @@ export default function ErrorDisplay({
             </details>
           )}
         </div>
-        <div className="ml-2 sm:ml-4 flex-shrink-0">
+        <div className="ml-2 sm:ml-4 flex-shrink-0 flex space-x-2">
+          {onReset && (
+            <button
+              onClick={() => {
+                setVisible(false)
+                onReset()
+              }}
+              className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none"
+            >
+              Réinitialiser
+            </button>
+          )}
           <button
             onClick={() => {
               setVisible(false)

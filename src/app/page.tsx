@@ -35,14 +35,15 @@ export default function Home() {
     setMessages(prev => [...prev, {...message, timestamp: new Date()}])
   }
   
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = async (text: string) => {
     if (!session.isActive || !session.token || !wsClientRef.current) {
       setError(createError('SESSION_ERROR', 'No active session'))
       return
     }
     
     // Validate session before sending message
-    if (!validateAndUpdateSession()) {
+    const isValid = await validateAndUpdateSession()
+    if (!isValid) {
       setError(createError('SESSION_ERROR', 'Session invalide'))
       return
     }
@@ -68,9 +69,9 @@ export default function Home() {
     }
   }
 
-  const handleSessionStateChange = (active: boolean) => {
+  const handleSessionStateChange = async (active: boolean) => {
     if (active) {
-      const success = startSession()
+      const success = await startSession()
       if (!success) {
         setError(createError('SESSION_ERROR', 'Failed to start session'))
         return
@@ -260,6 +261,7 @@ export default function Home() {
             isRecording={isRecording}
             onError={setError}
             onSendMessage={handleSendMessage}
+            suppressHydrationWarning={true}
           />
         </div>
       </div>

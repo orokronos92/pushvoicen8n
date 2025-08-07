@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface SessionManagerProps {
   onSessionStateChange: (active: boolean) => void
@@ -28,7 +28,6 @@ export default function SessionManager({
       timer = setInterval(() => {
         setSessionTimeLeft(prev => {
           const newTime = prev - 1
-          onTimeRemainingChange(newTime)
           
           if (newTime <= 1) {
             // Session timeout
@@ -48,7 +47,19 @@ export default function SessionManager({
     return () => {
       if (timer) clearInterval(timer)
     }
-  }, [sessionActive, onTimeRemainingChange])
+  }, [sessionActive])
+  
+  // Effet séparé pour notifier le parent du changement de temps
+  // Utiliser une ref pour éviter les appels en boucle
+  const lastNotifiedTime = useRef<number>(timeRemaining)
+  
+  useEffect(() => {
+    // Ne notifier que si le temps a changé significativement (plus de 1 seconde)
+    if (Math.abs(sessionTimeLeft - lastNotifiedTime.current) >= 1) {
+      lastNotifiedTime.current = sessionTimeLeft
+      onTimeRemainingChange(sessionTimeLeft)
+    }
+  }, [sessionTimeLeft, onTimeRemainingChange])
   
   const handleStartSession = () => {
     onSessionStateChange(true)
