@@ -1,5 +1,5 @@
 import './globals.css'
-import '@/lib/polyfills'
+import '@/lib/polyfills.client'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 

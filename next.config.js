@@ -5,16 +5,7 @@ const nextConfig = {
     JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',
   },
   output: 'standalone',
-  webpack: (config, { isServer }) => {
-    // Configuration webpack simplifiée et stable
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-      }
-    }
-    return config
-  },
+  // SWC est utilisé par défaut, pas besoin de configuration webpack complexe
 }
 
 module.exports = nextConfig
