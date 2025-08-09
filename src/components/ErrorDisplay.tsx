@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AppError, getUserFriendlyErrorMessage } from '@/lib/utils'
+import { AppError, createError, ErrorType } from '@/lib/errors/ErrorTypes'
 
 interface ErrorDisplayProps {
   error: AppError | null
@@ -45,8 +45,7 @@ export default function ErrorDisplay({
 
   const getErrorIcon = () => {
     switch (error.code) {
-      case 'MICROPHONE_ACCESS_DENIED':
-      case 'MICROPHONE_NOT_AVAILABLE':
+      case 'PERMISSION_ERROR':
         return (
           <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -60,8 +59,8 @@ export default function ErrorDisplay({
           </svg>
         )
       
-      case 'WEBSOCKET_CONNECTION_ERROR':
       case 'NETWORK_ERROR':
+      case 'WEBSOCKET_ERROR':
         return (
           <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
@@ -69,7 +68,7 @@ export default function ErrorDisplay({
         )
       
       case 'SESSION_EXPIRED':
-      case 'WEBSOCKET_AUTH_ERROR':
+      case 'AUTH_ERROR':
         return (
           <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -87,19 +86,18 @@ export default function ErrorDisplay({
 
   const getErrorColor = () => {
     switch (error.code) {
-      case 'MICROPHONE_ACCESS_DENIED':
-      case 'MICROPHONE_NOT_AVAILABLE':
+      case 'PERMISSION_ERROR':
         return 'bg-red-50 border-red-200 text-red-800'
       
       case 'SPEECH_RECOGNITION_ERROR':
         return 'bg-yellow-50 border-yellow-200 text-yellow-800'
       
-      case 'WEBSOCKET_CONNECTION_ERROR':
       case 'NETWORK_ERROR':
+      case 'WEBSOCKET_ERROR':
         return 'bg-orange-50 border-orange-200 text-orange-800'
       
       case 'SESSION_EXPIRED':
-      case 'WEBSOCKET_AUTH_ERROR':
+      case 'AUTH_ERROR':
         return 'bg-purple-50 border-purple-200 text-purple-800'
       
       default:
@@ -117,7 +115,7 @@ export default function ErrorDisplay({
         </div>
         <div className="ml-3 flex-1 min-w-0">
           <p className="text-sm font-medium">
-            {getUserFriendlyErrorMessage(error)}
+            {error.userMessage || error.message}
           </p>
           {error.details && process.env.NODE_ENV === 'development' && (
             <details className="mt-2">

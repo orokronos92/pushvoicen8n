@@ -1,6 +1,6 @@
 'use client';
 
-import '@/lib/polyfills.client';
+import '@/lib/polyfills';
 
 export default function PolyfillLoader() {
   return null;

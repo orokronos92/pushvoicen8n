@@ -1,5 +1,6 @@
 import './globals.css'
 import PolyfillLoader from '@/components/PolyfillLoader'
+import Providers from '@/components/Providers'
 import ErrorBoundary from '@/lib/errors/ErrorBoundary'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
@@ -22,13 +23,15 @@ export default function RootLayout({
     <html lang="fr">
       <body className={inter.className}>
         <PolyfillLoader />
-        <ErrorBoundary>
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-          </div>
-        </ErrorBoundary>
+        <Providers>
+          <ErrorBoundary>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+              <main className="container mx-auto px-4 py-8">
+                {children}
+              </main>
+            </div>
+          </ErrorBoundary>
+        </Providers>
       </body>
     </html>
   )

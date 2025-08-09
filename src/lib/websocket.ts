@@ -2,9 +2,16 @@ import { verifyToken, refreshToken, getTokenTimeRemaining } from './auth'
 import { PerformanceMonitor, debounce, throttle } from './performance'
 
 export interface WebSocketMessage {
-  type: 'message' | 'auth' | 'ping' | 'pong' | 'session_start' | 'session_end' | 'session_heartbeat'
+  type: 'message' | 'auth' | 'ping' | 'pong' | 'session_start' | 'session_end' | 'session_heartbeat' | 'bot_response' | 'audio_response'
   payload: any
   timestamp: Date
+}
+
+export interface AudioPayload {
+  audioData: string // Base64 encoded audio data
+  audioFormat?: 'mp3' | 'wav' | 'ogg' // Default to mp3
+  text?: string // Optional transcript of the audio
+  duration?: number // Duration in seconds
 }
 
 export interface WebSocketOptions {

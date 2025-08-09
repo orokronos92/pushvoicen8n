@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import VoiceRecorder from '@/components/VoiceRecorder'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+const VoiceRecorder = lazy(() => import('@/components/VoiceRecorder'))
 import ConversationDisplay from '@/components/ConversationDisplay'
 import SessionManager from '@/components/SessionManager'
 import ErrorDisplay from '@/components/ErrorDisplay'
+import AudioPlayer from '@/components/AudioPlayer'
 import { createError, getUserFriendlyErrorMessage, checkBrowserSupport } from '@/lib/utils'
 import { createWebSocketClient, WebSocketMessage } from '@/lib/websocket'
 import { useSession } from '@/hooks/useSession'
@@ -16,6 +17,8 @@ export default function Home() {
   const [error, setError] = useState<any>(null)
   const [browserSupported, setBrowserSupported] = useState(true)
   const [wsConnected, setWsConnected] = useState(false)
+  const [audioPayload, setAudioPayload] = useState<any>(null)
+  const [audioEnabled, setAudioEnabled] = useState(true)
   
   const wsClientRef = useRef<any>(null)
   const { session, startSession, endSession, validateAndUpdateSession, updateActivity, updateTimeRemaining } = useSession()
@@ -153,6 +156,33 @@ export default function Home() {
         }
         break
         
+      case 'bot_response':
+        // Handle bot response from n8n
+        if (message.payload && message.payload.text) {
+          setMessages(prev => [...prev, {
+            text: message.payload.text,
+            sender: 'n8n',
+            timestamp: new Date()
+          }])
+        }
+        break
+        
+      case 'audio_response':
+        // Handle audio response from n8n
+        if (message.payload && message.payload.audioData) {
+          setAudioPayload(message.payload)
+          
+          // Also add text transcript if available
+          if (message.payload.text) {
+            setMessages(prev => [...prev, {
+              text: message.payload.text,
+              sender: 'n8n',
+              timestamp: new Date()
+            }])
+          }
+        }
+        break
+        
       case 'auth':
         // Handle authentication response
         if (message.payload && message.payload.success === false) {
@@ -234,6 +264,7 @@ export default function Home() {
     )
   }
 
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <header className="text-center mb-6 sm:mb-8">
@@ -253,15 +284,50 @@ export default function Home() {
             timeRemaining={Math.min(session.timeRemaining, Math.floor(getTimeRemaining() / 1000))}
           />
           
-          <VoiceRecorder
-            onRecordingStateChange={handleRecordingStateChange}
-            onNewMessage={handleNewMessage}
-            sessionActive={session.isActive}
-            isRecording={isRecording}
-            onError={setError}
-            onSendMessage={handleSendMessage}
-            suppressHydrationWarning={true}
-          />
+          <Suspense fallback={<div className="bg-white rounded-xl shadow-lg p-4 text-center">Chargement du composant audio...</div>}>
+            <VoiceRecorder
+              onRecordingStateChange={handleRecordingStateChange}
+              onNewMessage={handleNewMessage}
+              sessionActive={session.isActive}
+              isRecording={isRecording}
+              onError={setError}
+              onSendMessage={handleSendMessage}
+              suppressHydrationWarning={true}
+            />
+          </Suspense>
+          
+          {/* Audio toggle */}
+          <div className="bg-white rounded-xl shadow-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-800">Réponses audio</h3>
+                <p className="text-xs text-gray-600">
+                  {audioEnabled ? 'Les réponses audio seront jouées automatiquement' : 'Les réponses audio sont désactivées'}
+                </p>
+              </div>
+              <button
+                onClick={() => setAudioEnabled(!audioEnabled)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  audioEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    audioEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          
+          {/* Audio Player */}
+          {audioPayload && audioEnabled && (
+            <AudioPlayer
+              audioPayload={audioPayload}
+              autoPlay={true}
+              onEnded={() => setAudioPayload(null)}
+            />
+          )}
         </div>
       </div>
 
